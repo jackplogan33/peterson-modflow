@@ -72,13 +72,13 @@ def prep_forecasts(pst, model_times=False):
     return 
 
 def prep_deps(template_ws, dep_dir=None):
-    # dep_dir=os.path.join('..','..','dependencies')
-    # for org_d in [os.path.join(dep_dir,"flopy"),os.path.join(dep_dir,"pyemu")]:
-    #     #org_d = i.path
-    #     new_d = os.path.join(template_ws, os.path.basename(org_d))
-    #     if os.path.exists(new_d):
-    #         shutil.rmtree(new_d)
-    #     shutil.copytree(org_d, new_d)
+    dep_dir=os.path.join('..','..','dependencies')
+    for org_d in [os.path.join(dep_dir,"flopy"),os.path.join(dep_dir,"pyemu")]:
+        #org_d = i.path
+        new_d = os.path.join(template_ws, os.path.basename(org_d))
+        if os.path.exists(new_d):
+            shutil.rmtree(new_d)
+        shutil.copytree(org_d, new_d)
     return
 
 
@@ -87,14 +87,21 @@ if "linux" in platform.platform().lower():
 elif "darwin" in platform.platform().lower() or "macos" in platform.platform().lower():
     bin_path = os.path.join("..","..", "bin_new", "mac")
 else:
-    bin_path = os.path.join("..", "..", "mf6")
+    bin_path = os.path.join("..", , "bin")
 
 def prep_bins(dest_path):
     files = os.listdir(bin_path)
     for f in files:
         if os.path.exists(os.path.join(dest_path,f)):
-            os.remove(os.path.join(dest_path,f))
-        shutil.copy2(os.path.join(bin_path,f),os.path.join(dest_path,f))
+            try:
+                os.remove(os.path.join(dest_path,f))
+                valid = True
+            except:
+                print(f"File could not be removed: {f}")
+                valid = False
+
+        if valid:
+            shutil.copy2(os.path.join(bin_path,f),os.path.join(dest_path,f))
 
 def run_notebook(notebook_filename, path):
     notebook_filename = os.path.join(path,notebook_filename)
