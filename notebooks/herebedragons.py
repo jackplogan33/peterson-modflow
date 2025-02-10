@@ -87,10 +87,11 @@ if "linux" in platform.platform().lower():
 elif "darwin" in platform.platform().lower() or "macos" in platform.platform().lower():
     bin_path = os.path.join("..","..", "bin_new", "mac")
 else:
-    bin_path = os.path.join("..", , "bin")
+    bin_path = os.path.join("..", "bin")
 
 def prep_bins(dest_path):
     files = os.listdir(bin_path)
+    valid = True
     for f in files:
         if os.path.exists(os.path.join(dest_path,f)):
             try:
