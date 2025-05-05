@@ -179,3 +179,162 @@ def write_external_obs(df, path, solute, k=0.002, forecast_val=-888, nan_val=-99
 
     obs_data_df = pd.DataFrame(obs_data)
     obs_data_df.to_csv(path, index=False)
+
+def write_tpl(path, zones, param, solute):
+    """Write the PEST++ Template file
+
+    Parameters:
+    -----------
+    path: str
+        path to tpl
+
+    zones: np.ndarray
+        zone array
+
+    param: str
+        parameter to write. Must be one of {'kd', 'theta', 'thetaim', 'rhob'}.
+        kd: distance coefficient
+        theta: mobile porosity
+        thetaim: immobile porosity
+        rhob: bulk density
+
+    solute: str
+        string indicating solute name. **Only used for kd.** 
+        If writing writing other param, pass `solute="all"`
+    """
+    if param not in {'kd', 'theta', 'thetaim', 'rhob'}:
+        raise ValueError(f"write_tpl() receive invalid value for param: {param}")
+    
+    with open(path, 'w', encoding='utf-8') as tpl:
+        tpl.write('ptf ~\n')  # header for TPL file
+
+        # Iterate through each line of the array
+        for row in zones:
+            # Initialize line for TPL 
+            line = []
+            for val in row:  # Iterate through values in data
+                # If value is zero, leave as is
+                if val == 0: line.append(f'{val}')
+
+                # If value is an integer, add to file
+                elif val.is_integer():
+                    if param == 'kd':
+                        line.append(f'~{solute.upper()}_{param.upper()}{int(val)}~')
+                        
+                    else:
+                        line.append(f'~{param.upper()}{int(val)}~')
+
+                # All else, set invalid
+                else: line.append(f'~{param}_invalid~')
+            
+            # Join each value as space delimited, write to file, create newline
+            tpl.write(' '.join(line) + '\n')
+
+def write_cnc_tpl(cnc_path, tpl_path, mult_map):
+    # Read the original file's contents
+    with open(cnc_path, 'r') as file:
+        file_contents = file.read().splitlines()
+
+    modified_lines = ['pft ~']  # Store file lines, start with pest header
+    period_block = False        # Initialize period block var
+    
+    # Iterate through the lines of the file
+    for line in file_contents:
+        stripped = line.strip()
+        
+        # Check if we are in a period block
+        if stripped.startswith('BEGIN period'):
+            period_block = True
+            continue
+        elif stripped.startswith('END period'):
+            period_block = False
+            continue
+
+        # check if in a period block, the line exists, and is not a comment
+        if period_block and stripped and not stripped.startswith('#'):
+            split = line.split()  # Parse line data
+
+            if len(split) == 6:   # 6 length line is a CNC entry
+                layer, row, col = split[0:3]  # Extract cellid
+                conc = split[3]               # Concentration val
+                mult = split[4]               # Multiplier value
+                boundname = split[5]          # Boundname
+
+                if boundname in mult_map.keys():
+                    # Access new multiplier from map
+                    mult = mult_map[boundname]
+
+                line = f"  {layer} {row} {col}  {conc:<18} {mult:<10} {boundname}"
+                
+        modified_lines.append(line)
+                
+    # Save the updated contents to a new file
+    with open(tpl_path, 'w') as f:
+        f.write('\n'.join(modified_lines))
+
+
+def write_control_file(
+    file_path,
+    parameter_group_file,
+    parameter_file,
+    obs_files,  # Accepts list[str]
+    model_command,
+    input_file,
+    output_file,
+    options=None  # Optional control keywords
+):
+    """Writes the PEST++ Control file for Version 2
+
+    Parameters:
+    -----------
+    file_path: str
+        
+    """
+    if isinstance(obs_files, str):
+        obs_files = [obs_files]
+
+    default_options = {
+        "pestmode": "estimation",
+        "noptmax": "10",
+        "svdmode": "1",
+        "maxsing": "10000000",
+        "eigthresh": "1e-06",
+        "eigwrite": "1",
+        "parcov": "peterson_tran.cov",
+        "ies_num_reals": "250",
+        "ies_num_threads": "74",
+        "ies_multimodal_alpha": "0.25",
+        "ies_n_iter_reinflate": "3",
+    }
+    options = options or default_options
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write("pcf version=2\n")
+
+        # CONTROL DATA
+        f.write("* control data keyword\n")
+        for key, value in options.items():
+            f.write(f"{key:<40}{value}\n")
+
+        # PARAMETER GROUP
+        f.write("* parameter groups external\n")
+        f.write(f"{parameter_group_file}\n")
+
+        # PARAMETER DATA
+        f.write("* parameter data external\n")
+        f.write(f"{parameter_file}\n")
+
+        # OBSERVATION DATA
+        f.write("* observation data external\n")
+        for obs in obs_files:
+            f.write(f"{obs}\n")
+
+        # MODEL COMMAND
+        f.write("* model command line\n")
+        f.write(f"{model_command}\n")
+
+        # MODEL INPUT/OUTPUT
+        f.write("* model input external\n")
+        f.write(f"{input_file}\n")
+        f.write("* model output external\n")
+        f.write(f"{output_file}\n")

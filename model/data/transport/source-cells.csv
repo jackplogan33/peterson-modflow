@@ -1,4 +1,4 @@
-x,y,location,type
+row,column,location,type
 16,512,Peterson,AFFF
 17,510,Peterson,AFFF
 17,511,Peterson,AFFF
