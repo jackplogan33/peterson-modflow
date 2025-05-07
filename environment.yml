@@ -1,0 +1,14 @@
+name: PFAS
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.13
+  - flopy
+  - pyemu
+  - numpy
+  - matplotlib
+  - pandas
+  - cartopy
+  - scikit-learn
+  - jupyterlab
