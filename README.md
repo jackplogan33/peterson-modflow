@@ -14,7 +14,7 @@ We also believe the PEST++ documentation is incredibly important to read, as the
 
 ## How to Use this Repository
 
-Click [here]() for a video walking through the repository.
+Click [here](https://drive.google.com/file/d/1EpJRz5uyV43xr7MzIEUgKYGtPq242za5/view?usp=sharing) for a video walking through the repository.
 
 This repository has four main directories: `notebooks/`, `model/`, `pest-template/`, and `bin/`. 
 
@@ -32,8 +32,12 @@ This repository has four main directories: `notebooks/`, `model/`, `pest-templat
 * The `bin/` folder contains all of the MODFLOW 6 and PEST++ executable files. These are referened using relative paths from wherever they are called.
 
 You can clone this repository using either of the following commands:
-```git clone git@github.com:jackplogan33/peterson-modflow.git```
-```git clone https://github.com/jackplogan33/peterson-modflow.git```
+```
+git clone git@github.com:jackplogan33/peterson-modflow.git
+```
+```
+git clone https://github.com/jackplogan33/peterson-modflow.git
+```
 
 An environment file with all the required packages has been included. To download these packages, run the following line in the terminal:
 ```
