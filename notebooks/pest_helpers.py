@@ -35,6 +35,9 @@ def create_temp_workspace(
     # Copy contents of model dir to temp
     shutil.copytree(model_dir, template_path)
 
+    # Copy forward run to template dir
+    shutil.copy('forward_run.py', template_path)
+    
     # Make subdirectories
     for subdir in subdirs:
         (template_path / subdir).mkdir()
@@ -167,13 +170,14 @@ def write_external_obs(df, path, solute, k=0.002, forecast_val=-888, nan_val=-99
             # Construct a new row for each observation
             new_row = {
                 "obsnme": f"{row['well']}_{time}_{solute}",  # Observation name: wellname_time_solute
-                "obsval": row["value"],                  # Observation value: the value in the 'value' column
-                "weight": 1 /(row["value"] * k),         # Observation weight = sigma = 1/kC
-                "obgnme": "cnc"                          # Observation group: always 'cnc'
+                "obsval": row["value"],                      # Observation value: the value in the 'value' column
+                "weight": 1 /(row["value"] * k),             # Observation weight = sigma = 1/kC
+                "obgnme": "cnc"                              # Observation group: always 'cnc'
             }
                 
             if row['value'] == forecast_val:
                 new_row['weight'] = 0
+                new_row['obgnme'] = 'forecast'
 
             obs_data.append(new_row)
 
@@ -235,7 +239,7 @@ def write_cnc_tpl(cnc_path, tpl_path, mult_map):
     with open(cnc_path, 'r') as file:
         file_contents = file.read().splitlines()
 
-    modified_lines = ['pft ~']  # Store file lines, start with pest header
+    modified_lines = ['ptf ~']  # Store file lines, start with pest header
     period_block = False        # Initialize period block var
     
     # Iterate through the lines of the file
@@ -288,7 +292,44 @@ def write_control_file(
     Parameters:
     -----------
     file_path: str
+        path to write control file to
+
+    parameter_group_file: str
+        Path to file with parameter groups
+
+    parameter_file: str
+        Path to parameter file
+
+    obs_files: list[str]
+        Observation file(s)
+
+    model_command: str
+        Command line for the forward script. For our forward run,
+        'python forward_run.py' 
+
+    input_file: str
+        File path to CSV containing the TPL filepaths
+
+    output_file: str
+        File path to CSV containing the INS filepaths
+
+    options:
+        Optional control keywords. Sets up the run. There are a lot of these,
+        default options below. If you pass anything for options, these are 
+        overwritten by passed dictionary.
         
+        default_options = {
+            "pestmode": "estimation",
+            "noptmax": "10",
+            "svdmode": "1",
+            "maxsing": "10000000",
+            "eigthresh": "1e-06",
+            "eigwrite": "1",
+            "parcov": "peterson_tran.cov",
+            "ies_num_reals": "250",
+            "ies_num_threads": "74",
+            "ies_multimodal_alpha": "0.25",
+        }
     """
     if isinstance(obs_files, str):
         obs_files = [obs_files]
@@ -304,7 +345,6 @@ def write_control_file(
         "ies_num_reals": "250",
         "ies_num_threads": "74",
         "ies_multimodal_alpha": "0.25",
-        "ies_n_iter_reinflate": "3",
     }
     options = options or default_options
 
