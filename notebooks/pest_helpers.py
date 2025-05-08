@@ -4,6 +4,8 @@ import numpy as np
 import re
 import flopy
 from pathlib import Path
+import stat
+import os
 
 def create_temp_workspace(
     model_dir: str, 
@@ -30,7 +32,8 @@ def create_temp_workspace(
     template_path = Path(template_dir)  # Turn tempdir into an absolute path
 
     # Remove files in temp path if it already exists
-    if template_path.exists(): shutil.rmtree(template_path)
+    if template_path.exists(): 
+        shutil.rmtree(template_path, onerror=on_rm_error)
 
     # Copy contents of model dir to temp
     shutil.copytree(model_dir, template_path)
@@ -43,6 +46,12 @@ def create_temp_workspace(
         (template_path / subdir).mkdir()
 
     print(f"Workspace set up at: {template_path.resolve()}")
+
+
+def on_rm_error(func, path, exc_info):
+    # If the error is due to access, change permission and retry
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
 
 def _closest_time(time, mod_times, used_times):
     """Internal function to find closest model time for an observation"""
